@@ -1,86 +1,65 @@
-use std::io::{self, stdout, Stdout, Write};
+use std::io::{self, Write};
 
 use crossterm::{cursor, QueueableCommand, terminal};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
-use crossterm::event::Event::Key;
-use crossterm::style::Print;
-use crossterm::terminal::ClearType;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use errno::errno;
+use crate::keyboard::Keyboard;
+use crate::my_lib::ResultCode;
+use crate::screen::Screen;
 
 pub(crate) struct Editor {
-    width: u16,
-    height: u16,
+    screen: Screen,
+    keyboard: Keyboard,
 }
-
 
 impl Editor {
     pub(crate) fn new() -> io::Result<Self> {
-        let (columns, rows) = terminal::size()?;
         Ok(Self {
-            width: columns,
-            height: rows,
+            screen: Screen::new()?,
+            keyboard: Keyboard {},
         })
     }
 
-    pub(crate) fn process_keypress(&self) -> bool {
-        let c = self.read_key();
+    pub(crate) fn start(&mut self) -> io::Result<()> {
+        // Enables raw mode.
+        terminal::enable_raw_mode()?;
+        loop {
+            if self.refresh_screen().is_err() {
+                self.die("unable to refresh screen")
+            }
+            if self.process_keypress() {
+                break;
+            }
+        }
+        // Disables raw mode.
+        terminal::disable_raw_mode()
+    }
+    pub(crate) fn process_keypress(&mut self) -> bool {
+        let c = self.keyboard.read();
         match c {
             Ok(KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. }) => true,
+            Err(ResultCode::KeyReadFail) => {
+                self.die("Unable to read keyboard");
+                false
+            }
             _ => false
         }
     }
 
-    /// 向每一行的行首增加 ～
-    pub(crate) fn draw_rows(&self, stdout: &mut Stdout) -> io::Result<()> {
-        for row in 0..self.height {
-            stdout
-                .queue(cursor::MoveTo(0, row))?
-                .queue(Print("~".to_string()))?;
-        }
-        Ok(())
-    }
+    pub(crate) fn refresh_screen(&mut self) -> io::Result<()> {
+        self.screen.clear()?;
+        self.screen.draw_rows()?;
 
-    /// 清空屏幕
-    pub(crate) fn clear_screen(&self, stdout: &mut Stdout) -> io::Result<()> {
-        stdout
-            .queue(terminal::Clear(ClearType::All))?
-            .queue(cursor::MoveTo(0, 0))?
-            .flush()?;
-
-        Ok(())
-    }
-
-    pub(crate) fn refresh_screen(&self) -> io::Result<()> {
-        let mut stdout = stdout();
-        self.clear_screen(&mut stdout)?;
-        self.draw_rows(&mut stdout)?;
-
-        stdout.queue(cursor::MoveTo(0, 0))?
+        self.screen.stdout.queue(cursor::MoveTo(0, 0))?
             .flush()?;
         Ok(())
     }
 
-    pub(crate) fn die<S: Into<String>>(&self, message: S) {
-        let mut stdout = stdout();
-        let _ = self.clear_screen(&mut stdout);
+    pub(crate) fn die<S: Into<String>>(&mut self, message: S) {
+        let _ = self.screen.clear();
         terminal::disable_raw_mode().expect("disable raw error");
         eprintln!("{}: {}", message.into(), errno());
         std::process::exit(1);
-    }
-
-    /// 监听键入的值
-    pub(crate) fn read_key(&self) -> Result<KeyEvent, ()> {
-        loop {
-            if let Ok(event) = read() {
-                if let Key(key_event) = event {
-                    return Ok(key_event);
-                }
-            } else {
-                self.die("read");
-                break;
-            }
-        }
-        unreachable!()
     }
 }
 
