@@ -32,7 +32,7 @@ impl Editor {
 
     /// 向每一行的行首增加 ～
     pub(crate) fn draw_rows(&self, stdout: &mut Stdout) -> io::Result<()> {
-        for row in 0..24 {
+        for row in 0..self.height {
             stdout
                 .queue(cursor::MoveTo(0, row))?
                 .queue(Print("~".to_string()))?;
