@@ -4,7 +4,6 @@ use crossterm::terminal;
 
 use crate::editor::Editor;
 
-mod keyboard;
 mod editor;
 
 fn main() -> Result<()> {
