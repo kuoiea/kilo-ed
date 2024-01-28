@@ -1,37 +1,30 @@
-use std::io::{Result, stdout};
+use std::io::Result;
 
 use crossterm::terminal;
-use errno::errno;
 
-use crate::input::editor_process_keypress;
-use crate::output::{clear_screen, editor_refresh_screen};
+use crate::editor::Editor;
 
 mod keyboard;
-mod input;
-mod output;
+mod editor;
 
 fn main() -> Result<()> {
-    /// Enables raw mode.
+    // Enables raw mode.
     terminal::enable_raw_mode()?;
+
+    // 初始化一个窗口
+    let editor = Editor::new()?;
     loop {
-        if editor_refresh_screen().is_err(){
-            die("unable to refresh screen")
+        if editor.refresh_screen().is_err() {
+            editor.die("unable to refresh screen")
         }
-        if editor_process_keypress() {
+        if editor.process_keypress() {
             break;
         }
     }
 
-    /// Disables raw mode.
+    // Disables raw mode.
     terminal::disable_raw_mode()?;
     Ok(())
 }
 
 
-fn die<S: Into<String>>(message: S) {
-    let mut stdout = stdout();
-    let _ = clear_screen(&mut stdout);
-    terminal::disable_raw_mode().expect("disable raw error");
-    eprintln!("{}: {}", message.into(), errno());
-    std::process::exit(1);
-}
