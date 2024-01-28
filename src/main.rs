@@ -11,6 +11,7 @@ mod input;
 mod output;
 
 fn main() -> Result<()> {
+    /// Enables raw mode.
     terminal::enable_raw_mode()?;
     loop {
         if editor_refresh_screen().is_err(){
@@ -21,6 +22,7 @@ fn main() -> Result<()> {
         }
     }
 
+    /// Disables raw mode.
     terminal::disable_raw_mode()?;
     Ok(())
 }
@@ -28,7 +30,7 @@ fn main() -> Result<()> {
 
 fn die<S: Into<String>>(message: S) {
     let mut stdout = stdout();
-    clear_screen(&mut stdout)?;
+    let _ = clear_screen(&mut stdout);
     terminal::disable_raw_mode().expect("disable raw error");
     eprintln!("{}: {}", message.into(), errno());
     std::process::exit(1);
