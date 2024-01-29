@@ -1,8 +1,10 @@
 use std::io::{self, stdout, Stdout, Write};
 
 use crossterm::{cursor, QueueableCommand, terminal};
+use crossterm::cursor::MoveTo;
 use crossterm::style::Print;
 use crossterm::terminal::ClearType;
+use crate::my_lib::Position;
 
 #[derive(Debug)]
 pub(crate) struct Screen {
@@ -34,7 +36,7 @@ impl Screen {
 
                 if welcome.len() < self.width as usize {
                     // 将欢迎语居中显示到屏幕上
-                    let leftmost=( (self.width as usize - welcome.len()) / 2 ) as u16;
+                    let leftmost = ((self.width as usize - welcome.len()) / 2) as u16;
                     self.stdout
                         .queue(cursor::MoveTo(0, row))?
                         .queue(Print("~".to_string()))?
@@ -54,7 +56,7 @@ impl Screen {
         };
 
         // 将光标定位到首行
-        self.stdout.queue(cursor::MoveTo(0, 0))?;
+
         // self.stdout.flush()
         Ok(())
     }
@@ -64,7 +66,7 @@ impl Screen {
     pub(crate) fn clear(&mut self) -> io::Result<()> {
         self.stdout
             .queue(terminal::Clear(ClearType::All))?
-            .queue(cursor::MoveTo(0, 0))?;
+            .queue(MoveTo(0, 0))?;
         Ok(())
     }
 
@@ -73,5 +75,11 @@ impl Screen {
     }
     pub(crate) fn cursor_position(&self) -> io::Result<(u16, u16)> {
         cursor::position()
+    }
+
+    pub(crate) fn move_to(&mut self, pos: Position) -> io::Result<()> {
+        self.stdout
+            .queue(MoveTo(pos.x, pos.y))?;
+        Ok(())
     }
 }
