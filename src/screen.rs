@@ -73,6 +73,8 @@ impl Screen {
     pub(crate) fn flush(&mut self) -> io::Result<()> {
         self.stdout.flush()
     }
+
+    #[warn(dead_code)]
     pub(crate) fn cursor_position(&self) -> io::Result<(u16, u16)> {
         cursor::position()
     }

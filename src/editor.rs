@@ -1,12 +1,12 @@
-use std::io::{self, Write};
+use std::io::{self};
 
-use crossterm::{cursor, QueueableCommand, terminal};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::terminal;
 use errno::errno;
-use crate::keyboard::Keyboard;
-use crate::my_lib::{Position, ResultCode};
-use crate::screen::Screen;
 
+use crate::keyboard::Keyboard;
+use crate::my_lib::Position;
+use crate::screen::Screen;
 
 pub(crate) struct Editor {
     screen: Screen,
@@ -40,19 +40,27 @@ impl Editor {
         // Disables raw mode.
         terminal::disable_raw_mode()
     }
+    /// 处理按键
     pub(crate) fn process_keypress(&mut self) -> io::Result<bool> {
-        self.screen.move_to(self.cursor)?;
-        let c = self.keyboard.read();
-        match c {
-            Ok(KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. }) => Ok(true),
-            Err(ResultCode::KeyReadFail) => {
-                self.die("Unable to read keyboard");
-                Ok(false)
+        if let Ok(c) = self.keyboard.read() {
+            match c {
+                KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. } => Ok(true),
+                KeyEvent { code: KeyCode::Char(key_code), .. } => {
+                    match key_code {
+                        'w' | 'a' | 's' | 'd' => self.move_cursor(key_code),
+                        _ => {}
+                    }
+                    Ok(false)
+                }
+                _ => Ok(false)
             }
-            _ => Ok(false)
+        } else {
+            self.die("Unable to read keyboard");
+            Ok(false)
         }
     }
 
+    /// 刷新屏幕
     pub(crate) fn refresh_screen(&mut self) -> io::Result<()> {
         self.screen.clear()?;
         self.screen.draw_rows()?;
@@ -64,6 +72,18 @@ impl Editor {
         terminal::disable_raw_mode().expect("disable raw error");
         eprintln!("{}: {}", message.into(), errno());
         std::process::exit(1);
+    }
+
+    /// 匹配键位， 移动光标
+    pub(crate) fn move_cursor(&mut self, key: char) {
+        //saturating_sub/saturating_add 它将其限制在有效范围内,防止越界
+        match key {
+            'w' => { self.cursor.y = self.cursor.y.saturating_sub(1); }
+            'a' => { self.cursor.x = self.cursor.x.saturating_sub(1); }
+            's' => { self.cursor.y = self.cursor.y.saturating_add(1); }
+            'd' => { self.cursor.x = self.cursor.x.saturating_add(1); }
+            _ => {}
+        };
     }
 }
 
