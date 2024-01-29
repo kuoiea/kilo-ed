@@ -28,12 +28,24 @@ impl Screen {
         // 向每一行的行首增加 ～
         for row in 0..self.height {
             if row == self.height / 3 {
-                let mut welcome = format!("kilo editor --version {VERSION}");
+                let mut welcome = format!("Kuoiea's editor --version {VERSION}");
+                // 将此 String 缩短至指定长度
                 welcome.truncate(self.width as usize);
 
-                self.stdout
-                    .queue(cursor::MoveTo(0, row))?
-                    .queue(Print(welcome))?;
+                if welcome.len() < self.width as usize {
+                    // 将欢迎语居中显示到屏幕上
+                    let leftmost=( (self.width as usize - welcome.len()) / 2 ) as u16;
+                    self.stdout
+                        .queue(cursor::MoveTo(0, row))?
+                        .queue(Print("~".to_string()))?
+                        .queue(cursor::MoveTo(leftmost, row))?
+                        .queue(Print(welcome))?;
+                } else {
+                    // 直接打印到屏幕上
+                    self.stdout
+                        .queue(cursor::MoveTo(0, row))?
+                        .queue(Print(welcome))?;
+                }
             } else {
                 self.stdout
                     .queue(cursor::MoveTo(0, row))?
