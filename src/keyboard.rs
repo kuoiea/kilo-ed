@@ -1,8 +1,6 @@
-
-use crossterm::event::{KeyEvent, read};
-use crossterm::event::Event::Key;
 use crate::my_lib::{EditorResult, ResultCode};
-
+use crossterm::event::Event::Key;
+use crossterm::event::{read, KeyEvent};
 
 pub(crate) struct Keyboard;
 

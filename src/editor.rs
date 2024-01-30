@@ -64,36 +64,41 @@ impl Editor {
     pub(crate) fn process_keypress(&mut self) -> io::Result<bool> {
         if let Ok(c) = self.keyboard.read() {
             match c {
-                KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. } => return Ok(true),
-                KeyEvent { code: KeyCode::Char(key_code), .. } => {
-                    match key_code {
-                        'w' | 'a' | 's' | 'd' => {
-                            let c = self.keymap.get(&key_code).unwrap();
-                            self.move_cursor(*c)
-                        }
-                        _ => {}
+                KeyEvent {
+                    code: KeyCode::Char('q'),
+                    modifiers: KeyModifiers::CONTROL,
+                    ..
+                } => return Ok(true),
+                KeyEvent {
+                    code: KeyCode::Char(key_code),
+                    ..
+                } => match key_code {
+                    'w' | 'a' | 's' | 'd' => {
+                        let c = self.keymap.get(&key_code).unwrap();
+                        self.move_cursor(*c)
                     }
+                    _ => {}
                 },
-                KeyEvent{code, ..} => {
-                    match code {
-                        KeyCode::Home => self.cursor.x = 0,
-                        KeyCode::End => self.cursor.x = self.screen.bounds().x - 1,
-                        KeyCode::Up=>self.move_cursor(EditorKey::Up),
-                        KeyCode::Left => self.move_cursor(EditorKey::Left),
-                        KeyCode::Right => self.move_cursor(EditorKey::Right),
-                        KeyCode::Down => self.move_cursor(EditorKey::Down),
-                        KeyCode::PageDown |KeyCode::PageUp => {
-                            let bounds =self.screen.bounds();
-                            for _ in 0..bounds.y {
-                                self.move_cursor(
-                                    if code == KeyCode::PageUp {EditorKey::Up}
-                                    else { EditorKey::Down }
-                                )
-                            }
+                KeyEvent { code, .. } => match code {
+                    KeyCode::Home => self.cursor.x = 0,
+                    KeyCode::End => self.cursor.x = self.screen.bounds().x - 1,
+                    KeyCode::Up => self.move_cursor(EditorKey::Up),
+                    KeyCode::Left => self.move_cursor(EditorKey::Left),
+                    KeyCode::Right => self.move_cursor(EditorKey::Right),
+                    KeyCode::Down => self.move_cursor(EditorKey::Down),
+                    KeyCode::PageDown | KeyCode::PageUp => {
+                        let bounds = self.screen.bounds();
+                        for _ in 0..bounds.y {
+                            self.move_cursor(if code == KeyCode::PageUp {
+                                EditorKey::Up
+                            } else {
+                                EditorKey::Down
+                            })
                         }
-                        _ => {}
                     }
-                }
+                    KeyCode::Delete => {}
+                    _ => {}
+                },
             }
         } else {
             self.die("Unable to read keyboard");
@@ -121,8 +126,12 @@ impl Editor {
 
         //saturating_sub/saturating_add 它将其限制在有效范围内,防止越界
         match key {
-            EditorKey::Up => { self.cursor.y = self.cursor.y.saturating_sub(1); }
-            EditorKey::Left => { self.cursor.x = self.cursor.x.saturating_sub(1); }
+            EditorKey::Up => {
+                self.cursor.y = self.cursor.y.saturating_sub(1);
+            }
+            EditorKey::Left => {
+                self.cursor.x = self.cursor.x.saturating_sub(1);
+            }
             // 添加条件判断，不允许光标超出屏幕范围
             EditorKey::Down if self.cursor.y <= bounds.y => {
                 self.cursor.y = self.cursor.y.saturating_add(1);
@@ -134,4 +143,3 @@ impl Editor {
         };
     }
 }
-

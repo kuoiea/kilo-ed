@@ -1,7 +1,7 @@
 pub(crate) type EditorResult<T, E> = Result<T, E>;
 
 pub(crate) enum ResultCode {
-    KeyReadFail
+    KeyReadFail,
 }
 
 #[derive(Default, Copy, Clone)]

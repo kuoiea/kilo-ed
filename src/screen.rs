@@ -1,10 +1,10 @@
 use std::io::{self, stdout, Stdout, Write};
 
-use crossterm::{cursor, QueueableCommand, terminal};
+use crate::my_lib::Position;
 use crossterm::cursor::MoveTo;
 use crossterm::style::Print;
 use crossterm::terminal::ClearType;
-use crate::my_lib::Position;
+use crossterm::{cursor, terminal, QueueableCommand};
 
 #[derive(Debug)]
 pub(crate) struct Screen {
@@ -22,7 +22,6 @@ impl Screen {
             stdout: stdout(),
         })
     }
-
 
     pub(crate) fn draw_rows(&mut self) -> io::Result<()> {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -53,14 +52,13 @@ impl Screen {
                     .queue(cursor::MoveTo(0, row))?
                     .queue(Print("~".to_string()))?;
             }
-        };
+        }
 
         // 将光标定位到首行
 
         // self.stdout.flush()
         Ok(())
     }
-
 
     /// 清空屏幕
     pub(crate) fn clear(&mut self) -> io::Result<()> {
@@ -79,12 +77,14 @@ impl Screen {
     // }
 
     pub(crate) fn move_to(&mut self, pos: Position) -> io::Result<()> {
-        self.stdout
-            .queue(MoveTo(pos.x, pos.y))?;
+        self.stdout.queue(MoveTo(pos.x, pos.y))?;
         Ok(())
     }
 
     pub(crate) fn bounds(&self) -> Position {
-        Position { x: self.width, y: self.height }
+        Position {
+            x: self.width,
+            y: self.height,
+        }
     }
 }
