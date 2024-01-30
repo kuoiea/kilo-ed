@@ -44,20 +44,23 @@ impl Editor {
     pub(crate) fn process_keypress(&mut self) -> io::Result<bool> {
         if let Ok(c) = self.keyboard.read() {
             match c {
-                KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. } => Ok(true),
+                KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. } => return Ok(true),
+                KeyEvent { code: KeyCode::Up, .. } => self.move_cursor('w'),
+                KeyEvent { code: KeyCode::Left, .. } => self.move_cursor('a'),
+                KeyEvent { code: KeyCode::Right, .. } => self.move_cursor('d'),
+                KeyEvent { code: KeyCode::Down, .. } => self.move_cursor('s'),
                 KeyEvent { code: KeyCode::Char(key_code), .. } => {
                     match key_code {
                         'w' | 'a' | 's' | 'd' => self.move_cursor(key_code),
                         _ => {}
                     }
-                    Ok(false)
                 }
-                _ => Ok(false)
+                _ => {}
             }
         } else {
             self.die("Unable to read keyboard");
-            Ok(false)
         }
+        Ok(false)
     }
 
     /// 刷新屏幕
