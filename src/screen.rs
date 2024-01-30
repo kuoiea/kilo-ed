@@ -83,4 +83,8 @@ impl Screen {
             .queue(MoveTo(pos.x, pos.y))?;
         Ok(())
     }
+
+    pub(crate) fn bounds(&self) -> Position {
+        Position { x: self.width, y: self.height }
+    }
 }

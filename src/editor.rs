@@ -25,7 +25,7 @@ pub(crate) struct Editor {
     screen: Screen,
     keyboard: Keyboard,
     cursor: Position,
-    keymap: HashMap<char, EditorKey>
+    keymap: HashMap<char, EditorKey>,
 }
 
 impl Editor {
@@ -39,7 +39,7 @@ impl Editor {
             screen: Screen::new()?,
             keyboard: Keyboard {},
             cursor: Position::default(),
-            keymap
+            keymap,
         })
     }
 
@@ -71,11 +71,10 @@ impl Editor {
                 KeyEvent { code: KeyCode::Down, .. } => self.move_cursor(EditorKey::Down),
                 KeyEvent { code: KeyCode::Char(key_code), .. } => {
                     match key_code {
-
                         'w' | 'a' | 's' | 'd' => {
                             let c = self.keymap.get(&key_code).unwrap();
                             self.move_cursor(*c)
-                        },
+                        }
                         _ => {}
                     }
                 }
@@ -103,12 +102,20 @@ impl Editor {
 
     /// 匹配键位， 移动光标
     pub(crate) fn move_cursor(&mut self, key: EditorKey) {
+        let bounds = self.screen.bounds();
+
         //saturating_sub/saturating_add 它将其限制在有效范围内,防止越界
         match key {
             EditorKey::Up => { self.cursor.y = self.cursor.y.saturating_sub(1); }
             EditorKey::Left => { self.cursor.x = self.cursor.x.saturating_sub(1); }
-            EditorKey::Down => { self.cursor.y = self.cursor.y.saturating_add(1); }
-            EditorKey::Right => { self.cursor.x = self.cursor.x.saturating_add(1); }
+            // 添加条件判断，不允许光标超出屏幕范围
+            EditorKey::Down if self.cursor.y <= bounds.y => {
+                self.cursor.y = self.cursor.y.saturating_add(1);
+            }
+            EditorKey::Right if self.cursor.x <= bounds.x => {
+                self.cursor.x = self.cursor.x.saturating_add(1);
+            }
+            _ => {}
         };
     }
 }
