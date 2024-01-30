@@ -65,10 +65,6 @@ impl Editor {
         if let Ok(c) = self.keyboard.read() {
             match c {
                 KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. } => return Ok(true),
-                KeyEvent { code: KeyCode::Up, .. } => self.move_cursor(EditorKey::Up),
-                KeyEvent { code: KeyCode::Left, .. } => self.move_cursor(EditorKey::Left),
-                KeyEvent { code: KeyCode::Right, .. } => self.move_cursor(EditorKey::Right),
-                KeyEvent { code: KeyCode::Down, .. } => self.move_cursor(EditorKey::Down),
                 KeyEvent { code: KeyCode::Char(key_code), .. } => {
                     match key_code {
                         'w' | 'a' | 's' | 'd' => {
@@ -77,8 +73,27 @@ impl Editor {
                         }
                         _ => {}
                     }
+                },
+                KeyEvent{code, ..} => {
+                    match code {
+                        KeyCode::Home => self.cursor.x = 0,
+                        KeyCode::End => self.cursor.x = self.screen.bounds().x - 1,
+                        KeyCode::Up=>self.move_cursor(EditorKey::Up),
+                        KeyCode::Left => self.move_cursor(EditorKey::Left),
+                        KeyCode::Right => self.move_cursor(EditorKey::Right),
+                        KeyCode::Down => self.move_cursor(EditorKey::Down),
+                        KeyCode::PageDown |KeyCode::PageUp => {
+                            let bounds =self.screen.bounds();
+                            for _ in 0..bounds.y {
+                                self.move_cursor(
+                                    if code == KeyCode::PageUp {EditorKey::Up}
+                                    else { EditorKey::Down }
+                                )
+                            }
+                        }
+                        _ => {}
+                    }
                 }
-                _ => {}
             }
         } else {
             self.die("Unable to read keyboard");
