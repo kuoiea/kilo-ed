@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::{self};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -8,18 +9,37 @@ use crate::keyboard::Keyboard;
 use crate::my_lib::Position;
 use crate::screen::Screen;
 
+#[derive(Copy, Clone)]
+pub(crate) enum EditorKey {
+    // a
+    Left,
+    // d
+    Right,
+    // w
+    Up,
+    // s
+    Down,
+}
+
 pub(crate) struct Editor {
     screen: Screen,
     keyboard: Keyboard,
     cursor: Position,
+    keymap: HashMap<char, EditorKey>
 }
 
 impl Editor {
     pub(crate) fn new() -> io::Result<Self> {
+        let mut keymap = HashMap::new();
+        keymap.insert('w', EditorKey::Up);
+        keymap.insert('a', EditorKey::Left);
+        keymap.insert('s', EditorKey::Down);
+        keymap.insert('d', EditorKey::Right);
         Ok(Self {
             screen: Screen::new()?,
             keyboard: Keyboard {},
             cursor: Position::default(),
+            keymap
         })
     }
 
@@ -45,13 +65,17 @@ impl Editor {
         if let Ok(c) = self.keyboard.read() {
             match c {
                 KeyEvent { code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL, .. } => return Ok(true),
-                KeyEvent { code: KeyCode::Up, .. } => self.move_cursor('w'),
-                KeyEvent { code: KeyCode::Left, .. } => self.move_cursor('a'),
-                KeyEvent { code: KeyCode::Right, .. } => self.move_cursor('d'),
-                KeyEvent { code: KeyCode::Down, .. } => self.move_cursor('s'),
+                KeyEvent { code: KeyCode::Up, .. } => self.move_cursor(EditorKey::Up),
+                KeyEvent { code: KeyCode::Left, .. } => self.move_cursor(EditorKey::Left),
+                KeyEvent { code: KeyCode::Right, .. } => self.move_cursor(EditorKey::Right),
+                KeyEvent { code: KeyCode::Down, .. } => self.move_cursor(EditorKey::Down),
                 KeyEvent { code: KeyCode::Char(key_code), .. } => {
                     match key_code {
-                        'w' | 'a' | 's' | 'd' => self.move_cursor(key_code),
+
+                        'w' | 'a' | 's' | 'd' => {
+                            let c = self.keymap.get(&key_code).unwrap();
+                            self.move_cursor(*c)
+                        },
                         _ => {}
                     }
                 }
@@ -78,14 +102,13 @@ impl Editor {
     }
 
     /// 匹配键位， 移动光标
-    pub(crate) fn move_cursor(&mut self, key: char) {
+    pub(crate) fn move_cursor(&mut self, key: EditorKey) {
         //saturating_sub/saturating_add 它将其限制在有效范围内,防止越界
         match key {
-            'w' => { self.cursor.y = self.cursor.y.saturating_sub(1); }
-            'a' => { self.cursor.x = self.cursor.x.saturating_sub(1); }
-            's' => { self.cursor.y = self.cursor.y.saturating_add(1); }
-            'd' => { self.cursor.x = self.cursor.x.saturating_add(1); }
-            _ => {}
+            EditorKey::Up => { self.cursor.y = self.cursor.y.saturating_sub(1); }
+            EditorKey::Left => { self.cursor.x = self.cursor.x.saturating_sub(1); }
+            EditorKey::Down => { self.cursor.y = self.cursor.y.saturating_add(1); }
+            EditorKey::Right => { self.cursor.x = self.cursor.x.saturating_add(1); }
         };
     }
 }
