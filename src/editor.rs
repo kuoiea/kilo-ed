@@ -48,6 +48,7 @@ impl Editor {
     where
         T: Into<String>,
     {
+        let data = data.into();
         let mut keymap: HashMap<char, EditorKey> = HashMap::new();
         keymap.insert('w', EditorKey::Up);
         keymap.insert('a', EditorKey::Left);
@@ -58,7 +59,11 @@ impl Editor {
             keyboard: Keyboard {},
             cursor: Position::default(),
             keymap,
-            rows: vec![data.into()],
+            rows: if data.is_empty() {
+                Vec::new()
+            } else {
+                vec![data]
+            },
         })
     }
 

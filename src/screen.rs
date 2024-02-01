@@ -29,7 +29,7 @@ impl Screen {
         // 向每一行的行首增加 ～
         for row in 0..self.height {
             if row >= rows.len() as u16 {
-                if row == self.height / 3 {
+                if rows.is_empty() && row == self.height / 3 {
                     let mut welcome = format!("Kuoiea's editor --version {VERSION}");
                     // 将此 String 缩短至指定长度
                     welcome.truncate(self.width as usize);
