@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::{self};
+use std::path::Path;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::terminal;
@@ -30,7 +31,23 @@ pub(crate) struct Editor {
 }
 
 impl Editor {
+    pub(crate) fn with_file(file_name: impl AsRef<Path>) -> io::Result<Self> {
+        let first_line = std::fs::read_to_string(file_name)
+            .expect("不能打开文件")
+            .split('\n')
+            .next()
+            .unwrap()
+            .to_string();
+        Editor::build(first_line)
+    }
+
     pub(crate) fn new() -> io::Result<Self> {
+        Editor::build("")
+    }
+    pub(crate) fn build<T>(data: T) -> io::Result<Self>
+    where
+        T: Into<String>,
+    {
         let mut keymap: HashMap<char, EditorKey> = HashMap::new();
         keymap.insert('w', EditorKey::Up);
         keymap.insert('a', EditorKey::Left);
@@ -41,7 +58,7 @@ impl Editor {
             keyboard: Keyboard {},
             cursor: Position::default(),
             keymap,
-            rows: vec!["hello word!".to_string()],
+            rows: vec![data.into()],
         })
     }
 
