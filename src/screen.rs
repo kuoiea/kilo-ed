@@ -55,11 +55,11 @@ impl Screen {
                 }
             } else {
                 // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
-                let len = rows[0].len().min(self.width as usize);
+                let len = rows[row as usize].len().min(self.width as usize);
                 self.stdout
                     .queue(MoveTo(0, row))?
                     // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
-                    .queue(Print(rows[0][0..len].to_string()))?;
+                    .queue(Print(rows[row as usize][0..len].to_string()))?;
             }
         }
 
