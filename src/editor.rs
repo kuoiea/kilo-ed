@@ -22,11 +22,12 @@ pub(crate) enum EditorKey {
 }
 
 pub(crate) struct Editor {
-    screen: Screen,
+    screen: Screen, // 屏幕信息
     keyboard: Keyboard,
-    cursor: Position,
-    keymap: HashMap<char, EditorKey>,
-    rows: Vec<String>,
+    cursor: Position,                 // 光标在屏幕上的位置
+    keymap: HashMap<char, EditorKey>, // 键盘映射关系
+    rows: Vec<String>,                // 屏幕展示上的内容
+    rowoff: u16,
 }
 
 impl Editor {
@@ -59,6 +60,7 @@ impl Editor {
             } else {
                 Vec::from(data)
             },
+            rowoff: 0,
         })
     }
 
@@ -69,7 +71,7 @@ impl Editor {
             if self.refresh_screen().is_err() {
                 self.die("unable to refresh screen")
             }
-            self.screen.move_to(self.cursor)?;
+            self.screen.move_to(self.cursor, self.rowoff)?;
             self.screen.flush()?;
 
             if self.process_keypress()? {
@@ -127,8 +129,9 @@ impl Editor {
 
     /// 刷新屏幕
     pub(crate) fn refresh_screen(&mut self) -> io::Result<()> {
+        self.scroll();
         self.screen.clear()?;
-        self.screen.draw_rows(&self.rows)
+        self.screen.draw_rows(&self.rows, self.rowoff)
     }
 
     pub(crate) fn die<S: Into<String>>(&mut self, message: S) {
@@ -151,7 +154,7 @@ impl Editor {
                 self.cursor.x = self.cursor.x.saturating_sub(1);
             }
             // 添加条件判断，不允许光标超出屏幕范围
-            EditorKey::Down if self.cursor.y <= bounds.y => {
+            EditorKey::Down if (self.cursor.y as usize) < self.rows.len() => {
                 self.cursor.y = self.cursor.y.saturating_add(1);
             }
             EditorKey::Right if self.cursor.x <= bounds.x => {
@@ -159,5 +162,15 @@ impl Editor {
             }
             _ => {}
         };
+    }
+
+    pub(crate) fn scroll(&mut self) {
+        let bounds: Position = self.screen.bounds();
+        if self.cursor.y < self.rowoff {
+            self.rowoff = self.cursor.y;
+        }
+        if self.cursor.y >= (self.rowoff + bounds.y) {
+            self.rowoff = self.cursor.y - bounds.y + 1
+        }
     }
 }

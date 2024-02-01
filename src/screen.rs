@@ -23,12 +23,13 @@ impl Screen {
         })
     }
 
-    pub(crate) fn draw_rows(&mut self, rows: &[String]) -> io::Result<()> {
+    pub(crate) fn draw_rows(&mut self, rows: &[String], rowoff: u16) -> io::Result<()> {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
         // 向每一行的行首增加 ～
         for row in 0..self.height {
-            if row >= rows.len() as u16 {
+            let filerow = (row + rowoff) as usize;
+            if filerow >= rows.len() {
                 if rows.is_empty() && row == self.height / 3 {
                     let mut welcome = format!("Kuoiea's editor --version {VERSION}");
                     // 将此 String 缩短至指定长度
@@ -55,11 +56,11 @@ impl Screen {
                 }
             } else {
                 // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
-                let len = rows[row as usize].len().min(self.width as usize);
+                let len = rows[filerow].len().min(self.width as usize);
                 self.stdout
                     .queue(MoveTo(0, row))?
                     // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
-                    .queue(Print(rows[row as usize][0..len].to_string()))?;
+                    .queue(Print(rows[filerow][0..len].to_string()))?;
             }
         }
 
@@ -85,8 +86,8 @@ impl Screen {
     //     cursor::position()
     // }
 
-    pub(crate) fn move_to(&mut self, pos: Position) -> io::Result<()> {
-        self.stdout.queue(MoveTo(pos.x, pos.y))?;
+    pub(crate) fn move_to(&mut self, pos: Position, rowoff: u16) -> io::Result<()> {
+        self.stdout.queue(MoveTo(pos.x, pos.y - rowoff))?;
         Ok(())
     }
 
