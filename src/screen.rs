@@ -23,7 +23,12 @@ impl Screen {
         })
     }
 
-    pub(crate) fn draw_rows(&mut self, rows: &[String], rowoff: u16) -> io::Result<()> {
+    pub(crate) fn draw_rows(
+        &mut self,
+        rows: &[String],
+        rowoff: u16,
+        coloff: u16,
+    ) -> io::Result<()> {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
         // 向每一行的行首增加 ～
@@ -56,11 +61,23 @@ impl Screen {
                 }
             } else {
                 // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
-                let len = rows[filerow].len().min(self.width as usize);
+                let mut len = rows[filerow].len() as u16;
+                if len < coloff {
+                    continue;
+                }
+
+                len -= coloff;
+                let start = coloff as usize;
+                let end = start
+                    + if len >= self.width {
+                        self.width as usize
+                    } else {
+                        len as usize
+                    };
                 self.stdout
                     .queue(MoveTo(0, row))?
                     // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
-                    .queue(Print(rows[filerow][0..len].to_string()))?;
+                    .queue(Print(rows[filerow][start..end].to_string()))?;
             }
         }
 
@@ -86,8 +103,8 @@ impl Screen {
     //     cursor::position()
     // }
 
-    pub(crate) fn move_to(&mut self, pos: Position, rowoff: u16) -> io::Result<()> {
-        self.stdout.queue(MoveTo(pos.x, pos.y - rowoff))?;
+    pub(crate) fn move_to(&mut self, pos: Position, rowoff: u16, coloff: u16) -> io::Result<()> {
+        self.stdout.queue(MoveTo(pos.x - coloff, pos.y - rowoff))?;
         Ok(())
     }
 

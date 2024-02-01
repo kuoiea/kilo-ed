@@ -27,7 +27,8 @@ pub(crate) struct Editor {
     cursor: Position,                 // 光标在屏幕上的位置
     keymap: HashMap<char, EditorKey>, // 键盘映射关系
     rows: Vec<String>,                // 屏幕展示上的内容
-    rowoff: u16,
+    rowoff: u16,                      // 垂直滚动
+    coloff: u16,                      // 水平滚动
 }
 
 impl Editor {
@@ -61,6 +62,7 @@ impl Editor {
                 Vec::from(data)
             },
             rowoff: 0,
+            coloff: 0,
         })
     }
 
@@ -71,7 +73,7 @@ impl Editor {
             if self.refresh_screen().is_err() {
                 self.die("unable to refresh screen")
             }
-            self.screen.move_to(self.cursor, self.rowoff)?;
+            self.screen.move_to(self.cursor, self.rowoff, self.coloff)?;
             self.screen.flush()?;
 
             if self.process_keypress()? {
@@ -131,7 +133,7 @@ impl Editor {
     pub(crate) fn refresh_screen(&mut self) -> io::Result<()> {
         self.scroll();
         self.screen.clear()?;
-        self.screen.draw_rows(&self.rows, self.rowoff)
+        self.screen.draw_rows(&self.rows, self.rowoff, self.coloff)
     }
 
     pub(crate) fn die<S: Into<String>>(&mut self, message: S) {
@@ -143,7 +145,7 @@ impl Editor {
 
     /// 匹配键位， 移动光标
     pub(crate) fn move_cursor(&mut self, key: EditorKey) {
-        let bounds = self.screen.bounds();
+        // let bounds = self.screen.bounds();
 
         //saturating_sub/saturating_add 它将其限制在有效范围内,防止越界
         match key {
@@ -157,7 +159,7 @@ impl Editor {
             EditorKey::Down if (self.cursor.y as usize) < self.rows.len() => {
                 self.cursor.y = self.cursor.y.saturating_add(1);
             }
-            EditorKey::Right if self.cursor.x <= bounds.x => {
+            EditorKey::Right => {
                 self.cursor.x = self.cursor.x.saturating_add(1);
             }
             _ => {}
@@ -171,6 +173,13 @@ impl Editor {
         }
         if self.cursor.y >= (self.rowoff + bounds.y) {
             self.rowoff = self.cursor.y - bounds.y + 1
+        }
+
+        if self.cursor.x < self.coloff {
+            self.coloff = self.cursor.x;
+        }
+        if self.cursor.x >= self.coloff + bounds.x {
+            self.coloff = self.cursor.x - bounds.x + 1;
         }
     }
 }
