@@ -26,12 +26,12 @@ pub(crate) struct Editor {
     keyboard: Keyboard,
     cursor: Position,
     keymap: HashMap<char, EditorKey>,
-    rows:Vec<String>
+    rows: Vec<String>,
 }
 
 impl Editor {
     pub(crate) fn new() -> io::Result<Self> {
-        let mut keymap:HashMap<char, EditorKey> = HashMap::new();
+        let mut keymap: HashMap<char, EditorKey> = HashMap::new();
         keymap.insert('w', EditorKey::Up);
         keymap.insert('a', EditorKey::Left);
         keymap.insert('s', EditorKey::Down);
@@ -41,7 +41,7 @@ impl Editor {
             keyboard: Keyboard {},
             cursor: Position::default(),
             keymap,
-            rows: vec!["hello word!".to_string()]
+            rows: vec!["hello word!".to_string()],
         })
     }
 
