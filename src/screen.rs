@@ -23,35 +23,45 @@ impl Screen {
         })
     }
 
-    pub(crate) fn draw_rows(&mut self) -> io::Result<()> {
+pub(crate) fn draw_rows(&mut self, rows: &[String]) -> io::Result<()> {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
         // 向每一行的行首增加 ～
         for row in 0..self.height {
-            if row == self.height / 3 {
-                let mut welcome = format!("Kuoiea's editor --version {VERSION}");
-                // 将此 String 缩短至指定长度
-                welcome.truncate(self.width as usize);
-
-                if welcome.len() < self.width as usize {
-                    // 将欢迎语居中显示到屏幕上
-                    let leftmost = ((self.width as usize - welcome.len()) / 2) as u16;
-                    self.stdout
-                        .queue(cursor::MoveTo(0, row))?
-                        .queue(Print("~".to_string()))?
-                        .queue(cursor::MoveTo(leftmost, row))?
-                        .queue(Print(welcome))?;
+            if row >= rows.len() as u16 {
+                if row == self.height / 3 {
+                    let mut welcome = format!("Kuoiea's editor --version {VERSION}");
+                    // 将此 String 缩短至指定长度
+                    welcome.truncate(self.width as usize);
+    
+                    if welcome.len() < self.width as usize {
+                        // 将欢迎语居中显示到屏幕上
+                        let leftmost = ((self.width as usize - welcome.len()) / 2) as u16;
+                        self.stdout
+                            .queue(cursor::MoveTo(0, row))?
+                            .queue(Print("~".to_string()))?
+                            .queue(cursor::MoveTo(leftmost, row))?
+                            .queue(Print(welcome))?;
+                    } else {
+                        // 直接打印到屏幕上
+                        self.stdout
+                            .queue(cursor::MoveTo(0, row))?
+                            .queue(Print(welcome))?;
+                    }
                 } else {
-                    // 直接打印到屏幕上
                     self.stdout
                         .queue(cursor::MoveTo(0, row))?
-                        .queue(Print(welcome))?;
+                        .queue(Print("~".to_string()))?;
                 }
-            } else {
+            }else {
+                // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
+                let len = rows[0].len().min(self.width as usize);
                 self.stdout
-                    .queue(cursor::MoveTo(0, row))?
-                    .queue(Print("~".to_string()))?;
+                .queue(MoveTo(0, row))?
+                // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
+                .queue(Print(rows[0][0..len].to_string()))?;
             }
+
         }
 
         // 将光标定位到首行

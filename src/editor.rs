@@ -26,11 +26,12 @@ pub(crate) struct Editor {
     keyboard: Keyboard,
     cursor: Position,
     keymap: HashMap<char, EditorKey>,
+    rows:Vec<String>
 }
 
 impl Editor {
     pub(crate) fn new() -> io::Result<Self> {
-        let mut keymap = HashMap::new();
+        let mut keymap:HashMap<char, EditorKey> = HashMap::new();
         keymap.insert('w', EditorKey::Up);
         keymap.insert('a', EditorKey::Left);
         keymap.insert('s', EditorKey::Down);
@@ -40,6 +41,7 @@ impl Editor {
             keyboard: Keyboard {},
             cursor: Position::default(),
             keymap,
+            rows: vec!["hello word!".to_string()]
         })
     }
 
@@ -109,8 +111,7 @@ impl Editor {
     /// 刷新屏幕
     pub(crate) fn refresh_screen(&mut self) -> io::Result<()> {
         self.screen.clear()?;
-        self.screen.draw_rows()?;
-        Ok(())
+        self.screen.draw_rows(&self.rows)
     }
 
     pub(crate) fn die<S: Into<String>>(&mut self, message: S) {
