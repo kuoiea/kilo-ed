@@ -95,7 +95,7 @@ impl Editor {
     }
     // 公有但受限制的函数，用来处理用户的按键输入。
     // 返回一个结果，指明是否因特定按键组合而退出程序。
-    pub(crate) fn processkeypress(&mut self) -> io::Result<bool> {
+    pub(crate) fn process_keypress(&mut self) -> io::Result<bool> {
         // 尝试从键盘读入字符，如果读入成功则进入匹配流程。
         if let Ok(c) = self.keyboard.read() {
             // 根据读入的按键事件匹配对应的操作。
