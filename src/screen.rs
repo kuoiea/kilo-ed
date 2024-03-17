@@ -72,14 +72,19 @@ impl Screen {
                 }
             } else {
                 // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
+                // 获取当前行的文本长度
                 let mut len = rows[filerow].len() as u16;
+                // 如果文本长度小于屏幕偏移量，那么表示当前行没有文本可以在屏幕上进行展示，跳过此行。
                 if len < coloff {
                     continue;
                 }
-
+                // 文本长度减去偏移量，等于剩下的文本长度
                 len -= coloff;
+                // 下面这段代码计算需要截取的字符串的长度
+                // 需要截取字符串的开始长度，也就是屏幕的偏移量
                 let start = coloff as usize;
                 let end = start
+                    // 如果文本长度大于 屏幕宽度，那么表示屏幕无法完全展示， 所以要以屏幕宽度为准， 否则以剩下的文本长度为准
                     + if len >= self.width {
                         self.width as usize
                     } else {

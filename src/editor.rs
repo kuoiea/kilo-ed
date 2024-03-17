@@ -173,8 +173,15 @@ impl Editor {
     /// 匹配键位， 移动光标
     /// move_cursor函数：根据传入的EditorKey枚举值匹配键位，并移动光标位置
     pub(crate) fn move_cursor(&mut self, key: EditorKey) {
+        // 获取当前光标所在的行数，如果超过文本行数的长度，则返回None
+        let row_index  = if self.cursor.y as usize >= self.rows.len() {
+            None
+        }else {
+            Some(self.cursor.y as usize)
+        };
         // 这一行是被注释掉的，原本可以用来获取屏幕的大小，可能不需要了因为有其他限制条件
         // let bounds = self.screen.bounds();
+
         // 这个match语句匹配key参数所表示的方向键，然后相应地移动光标
         match key {
             // 如果按下的是向上的键，使用saturating_sub防止减去1后变为负数导致的越界问题
@@ -192,7 +199,13 @@ impl Editor {
             }
             // 如果按下的是向右的键，使用saturating_add来移动光标，以避免数值溢出
             EditorKey::Right => {
-                self.cursor.x = self.cursor.x.saturating_add(1);
+                if let Some(idx) = row_index {
+                    // 获取当前行的文本长度， 并且和光标所在x轴位置做比较，如果光标所在位置小于文本长度，则可以向右继续移动，否则，光标不动。
+                    if (self.rows[idx].len() as u16) > self.cursor.x{
+                        self.cursor.x = self.cursor.x.saturating_add(1);
+                    }
+                }
+
             }
             // 其他键位不进行操作
             _ => {}
