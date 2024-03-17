@@ -90,10 +90,23 @@ impl Screen {
                     } else {
                         len as usize
                     };
+
+                // 处理因为索引时，碰到中文导致的Panic问题
+                // Rust 的字符串是以UTF-8格式编码的，因此当使用.char_indices()方法时，它会考虑到所有字符可能占用的不同字节数，
+                // 并会按照字符边界进行操作
+                // TODO 这里有问题，需要后面进行处理， 当碰到Panic的时候，应该返回当前字符串的下标，而不是行的长度
+                let select_row = &rows[filerow];
+                let char_positions: Vec<usize> =
+                    select_row.char_indices().map(|(idx, _)| idx).collect();
+                let start_index = char_positions
+                    .get(start)
+                    .copied()
+                    .unwrap_or(select_row.len());
+                let end_index = char_positions.get(end).copied().unwrap_or(select_row.len());
                 self.stdout
                     .queue(MoveTo(0, row))?
                     // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
-                    .queue(Print(rows[filerow][start..end].to_string()))?;
+                    .queue(Print(rows[filerow][start_index..end_index].to_string()))?;
             }
         }
 
