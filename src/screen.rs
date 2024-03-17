@@ -4,7 +4,7 @@ use crate::my_lib::Position;
 use crossterm::cursor::MoveTo;
 use crossterm::style::Print;
 use crossterm::terminal::ClearType;
-use crossterm::{cursor, terminal, QueueableCommand};
+use crossterm::{terminal, QueueableCommand};
 
 #[derive(Debug)]
 pub(crate) struct Screen {
@@ -50,30 +50,29 @@ impl Screen {
                     if welcome.len() < self.width as usize {
                         // 计算左侧空白填充长度，用于让文字居中
                         let leftmost = ((self.width as usize - welcome.len()) / 2) as u16;
-                        // 将文本光标移动到行首
+                        // 将文本光标移动到 行首
                         self.stdout
-                            .queue(cursor::MoveTo(0, row))?
+                            .queue(MoveTo(0, row))?
                             // 在行首打印波浪符~
                             .queue(Print("~".to_string()))?
                             // 将光标移动到中间开始位置
-                            .queue(cursor::MoveTo(leftmost, row))?
+                            .queue(MoveTo(leftmost, row))?
                             // 打印居中的欢迎信息
                             .queue(Print(welcome))?;
                     } else {
                         // 直接打印到屏幕上
-                        self.stdout
-                            .queue(cursor::MoveTo(0, row))?
-                            .queue(Print(welcome))?;
+                        self.stdout.queue(MoveTo(0, row))?.queue(Print(welcome))?;
                     }
                 } else {
                     self.stdout
-                        .queue(cursor::MoveTo(0, row))?
+                        .queue(MoveTo(0, row))?
                         .queue(Print("~".to_string()))?;
                 }
             } else {
                 // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
                 // 获取当前行的文本长度
-                let mut len = rows[filerow].len() as u16;
+                let chars: Vec<char> = rows[filerow].chars().collect(); // 将字符串转换为字符向量
+                let mut len = chars.len() as u16;
                 // 如果文本长度小于屏幕偏移量，那么表示当前行没有文本可以在屏幕上进行展示，跳过此行。
                 if len < coloff {
                     continue;
@@ -90,23 +89,10 @@ impl Screen {
                     } else {
                         len as usize
                     };
-
-                // 处理因为索引时，碰到中文导致的Panic问题
-                // Rust 的字符串是以UTF-8格式编码的，因此当使用.char_indices()方法时，它会考虑到所有字符可能占用的不同字节数，
-                // 并会按照字符边界进行操作
-                // TODO 这里有问题，需要后面进行处理， 当碰到Panic的时候，应该返回当前字符串的下标，而不是行的长度
-                let select_row = &rows[filerow];
-                let char_positions: Vec<usize> =
-                    select_row.char_indices().map(|(idx, _)| idx).collect();
-                let start_index = char_positions
-                    .get(start)
-                    .copied()
-                    .unwrap_or(select_row.len());
-                let end_index = char_positions.get(end).copied().unwrap_or(select_row.len());
                 self.stdout
                     .queue(MoveTo(0, row))?
                     // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
-                    .queue(Print(rows[filerow][start_index..end_index].to_string()))?;
+                    .queue(Print(chars[start..end].iter().collect::<String>()))?;
             }
         }
 

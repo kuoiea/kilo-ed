@@ -213,7 +213,7 @@ impl Editor {
 
         // 下面这几行代码是为了防止用户按键向下移动时，从比较长地行移动到短地行，光标没有紧贴行尾的问题。
         // 如果用户按键向下移动，这里需要重新计算选中行文本长度信息
-        let row_length = if self.cursor.y as usize > self.rows.len() {
+        let row_length = if self.cursor.y as usize >= self.rows.len() {
             0
         } else {
             self.rows[self.cursor.y as usize].len() as u16
@@ -231,7 +231,7 @@ impl Editor {
         }
         // 如果光标的y坐标大于或等于可视区域的最后一行，更新屏幕滚动的起始行以使光标在可视区域
         if self.cursor.y >= (self.rowoff + bounds.y) {
-            self.rowoff = self.cursor.y - bounds.y + 1
+            self.rowoff = self.cursor.y - bounds.y
         }
 
         // 计算水平滚动
