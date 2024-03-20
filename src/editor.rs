@@ -188,7 +188,7 @@ impl Editor {
                     self.cursor.x = self.cursor.x.saturating_sub(1);
                 } else if self.cursor.y > 0 {
                     // 如果用户不在第一行，并且在行首， 那么就需要光标移动到上面一行的行尾
-                    self.cursor.y -= 1;
+                    self.cursor.y = self.cursor.y.saturating_sub(1);
                     self.cursor.x = self.rows[self.cursor.y as usize].len() as u16;
                 }
             }
@@ -204,6 +204,9 @@ impl Editor {
                     // 获取当前行的文本长度， 并且和光标所在x轴位置做比较，如果光标所在位置小于文本长度，则可以向右继续移动，否则，光标不动。
                     if (self.rows[idx].len() as u16) > self.cursor.x {
                         self.cursor.x = self.cursor.x.saturating_add(1);
+                    } else {
+                        self.cursor.y = self.cursor.y.saturating_add(1);
+                        self.cursor.x = 0;
                     }
                 }
             }
