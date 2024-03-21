@@ -142,6 +142,14 @@ impl Editor {
                     // PageDown和PageUp键被按下时，对当前屏幕高度的每一行都进行光标移动操作。
                     KeyCode::PageDown | KeyCode::PageUp => {
                         let bounds = self.screen.bounds();
+                        match code {
+                            KeyCode::PageUp => self.cursor.y = self.rowoff,
+                            KeyCode::PageDown => {
+                                self.cursor.y =
+                                    (self.rowoff + bounds.y - 1).min(self.rows.len() as u16)
+                            }
+                            _ => panic!("rust compiler broke"),
+                        }
                         for _ in 0..bounds.y {
                             self.move_cursor(if code == KeyCode::PageUp {
                                 EditorKey::Up
