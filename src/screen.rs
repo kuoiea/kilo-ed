@@ -6,6 +6,56 @@ use crossterm::style::Print;
 use crossterm::terminal::ClearType;
 use crossterm::{terminal, QueueableCommand};
 
+const KILO_TABLE_STOP: usize = 4;
+const TABLE_CHAT: char = '\t';
+pub(crate) struct Row {
+    chars: String,
+    render: String,
+}
+
+impl Row {
+    pub(crate) fn new(chars: String) -> Self {
+        let mut render = String::new();
+        let mut idx = 0;
+        for c in chars.chars() {
+            match c {
+                TABLE_CHAT => {
+                    render.push(' ');
+                    idx += 1;
+                    while idx % KILO_TABLE_STOP != 0 {
+                        render.push(' ');
+                        idx += 1;
+                    }
+                }
+                _ => {
+                    render.push(c);
+                    idx += 1;
+                }
+            }
+        }
+        Self { chars, render }
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.chars.len()
+    }
+    pub(crate) fn render_len(&self) -> usize {
+        self.render.len()
+    }
+
+    pub(crate) fn cx_to_rx(&self, cursor_x: u16) -> usize {
+        let mut rx = 0;
+        for c in self.chars.chars().take(cursor_x as usize) {
+            if c == TABLE_CHAT {
+                rx += (KILO_TABLE_STOP - 1) - (rx % KILO_TABLE_STOP);
+            }
+            rx += 1;
+        }
+
+        rx
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct Screen {
     pub(crate) stdout: Stdout,
@@ -25,12 +75,7 @@ impl Screen {
         })
     }
 
-    pub(crate) fn draw_rows(
-        &mut self,
-        rows: &[String],
-        rowoff: u16,
-        coloff: u16,
-    ) -> io::Result<()> {
+    pub(crate) fn draw_rows(&mut self, rows: &[Row], rowoff: u16, coloff: u16) -> io::Result<()> {
         // 从环境变量中获取软件版本号，并将其存到常量VERSION
         const VERSION: &str = env!("CARGO_PKG_VERSION");
         // 遍历屏幕可展示的所有行
@@ -71,7 +116,7 @@ impl Screen {
             } else {
                 // 如果屏幕可以放下当前行，就在屏幕上将当前行打印出来
                 // 获取当前行的文本长度
-                let chars: Vec<char> = rows[filerow].chars().collect(); // 将字符串转换为字符向量
+                let chars: Vec<char> = rows[filerow].render.chars().collect(); // 将字符串转换为字符向量
                 let mut len = chars.len() as u16;
                 // 如果文本长度小于屏幕偏移量，那么表示当前行没有文本可以在屏幕上进行展示，跳过此行。
                 if len < coloff {
@@ -85,10 +130,10 @@ impl Screen {
                 let end = start
                     // 如果文本长度大于 屏幕宽度，那么表示屏幕无法完全展示， 所以要以屏幕宽度为准， 否则以剩下的文本长度为准
                     + if len >= self.width {
-                        self.width as usize
-                    } else {
-                        len as usize
-                    };
+                    self.width as usize
+                } else {
+                    len as usize
+                };
                 self.stdout
                     .queue(MoveTo(0, row))?
                     // 这里需要限制，如果屏幕宽度不足以放下所有字符，需要将多余的字符截取下来，不在屏幕上进行显示。
@@ -119,8 +164,15 @@ impl Screen {
     //     cursor::position()
     // }
 
-    pub(crate) fn move_to(&mut self, pos: Position, rowoff: u16, coloff: u16) -> io::Result<()> {
-        self.stdout.queue(MoveTo(pos.x - coloff, pos.y - rowoff))?;
+    pub(crate) fn move_to(
+        &mut self,
+        pos: Position,
+        rowoff: u16,
+        coloff: u16,
+        render_x: u16,
+    ) -> io::Result<()> {
+        self.stdout
+            .queue(MoveTo(render_x - coloff, pos.y - rowoff))?;
         Ok(())
     }
 

@@ -7,7 +7,7 @@ use std::path::Path;
 
 use crate::keyboard::Keyboard;
 use crate::my_lib::Position;
-use crate::screen::Screen;
+use crate::screen::{Row, Screen};
 
 #[derive(Copy, Clone)]
 pub(crate) enum EditorKey {
@@ -25,8 +25,9 @@ pub(crate) struct Editor {
     screen: Screen, // 屏幕信息
     keyboard: Keyboard,
     cursor: Position,                 // 光标在屏幕上的位置
+    render_x: u16,                    //
     keymap: HashMap<char, EditorKey>, // 键盘映射关系
-    rows: Vec<String>,                // 屏幕展示上的内容
+    rows: Vec<Row>,                   // 屏幕展示上的内容
     rowoff: u16,                      // 垂直滚动
     coloff: u16,                      // 水平滚动
 }
@@ -63,10 +64,16 @@ impl Editor {
             rows: if data.is_empty() {
                 Vec::new()
             } else {
-                Vec::from(data)
+                let v = Vec::from(data);
+                let mut rows = Vec::new();
+                for row in v {
+                    rows.push(Row::new(row));
+                }
+                rows
             },
             rowoff: 0,
             coloff: 0,
+            render_x: 0,
         })
     }
 
@@ -82,7 +89,8 @@ impl Editor {
             }
 
             // 移动光标
-            self.screen.move_to(self.cursor, self.rowoff, self.coloff)?;
+            self.screen
+                .move_to(self.cursor, self.rowoff, self.coloff, self.render_x)?;
             // 刷新屏幕
             self.screen.flush()?;
 
@@ -189,7 +197,7 @@ impl Editor {
                 } else if self.cursor.y > 0 {
                     // 如果用户不在第一行，并且在行首， 那么就需要光标移动到上面一行的行尾
                     self.cursor.y = self.cursor.y.saturating_sub(1);
-                    self.cursor.x = self.rows[self.cursor.y as usize].len() as u16;
+                    self.cursor.x = self.rows[self.cursor.y as usize].render_len() as u16;
                 }
             }
             // 如果按下的是向下的键并且光标不在最后一行，
@@ -202,7 +210,7 @@ impl Editor {
                 if (self.cursor.y as usize) < self.rows.len() {
                     let idx = self.cursor.y as usize;
                     // 获取当前行的文本长度， 并且和光标所在x轴位置做比较，如果光标所在位置小于文本长度，则可以向右继续移动，否则，光标不动。
-                    if (self.rows[idx].len() as u16) > self.cursor.x {
+                    if (self.rows[idx].render_len() as u16) > self.cursor.x {
                         self.cursor.x = self.cursor.x.saturating_add(1);
                     } else {
                         self.cursor.y = self.cursor.y.saturating_add(1);
@@ -227,6 +235,11 @@ impl Editor {
     }
 
     pub(crate) fn scroll(&mut self) {
+        self.render_x = if self.cursor.y < (self.rows.len() as u16) {
+            self.rows[self.cursor.y as usize].cx_to_rx(self.cursor.x) as u16
+        } else {
+            0
+        };
         // 获取屏幕边界信息（Terminal 大小）
         let bounds: Position = self.screen.bounds();
         // 检测如果光标的垂直位置（y坐标）小于屏幕滚动的起始行，我们需要更新屏幕滚动的起始行
@@ -240,12 +253,12 @@ impl Editor {
 
         // 计算水平滚动
         // 检测如果光标的水平位置（x坐标）小于屏幕滚动的起始列，我们需要更新屏幕滚动的起始列
-        if self.cursor.x < self.coloff {
+        if self.render_x < self.coloff {
             self.coloff = self.cursor.x;
         }
         // 如果光标的x坐标大于或等于可视区域的最右列，更新屏幕滚动的起始列以使光标在可视区域
-        if self.cursor.x >= self.coloff + bounds.x {
-            self.coloff = self.cursor.x - bounds.x + 1;
+        if self.render_x >= self.coloff + bounds.x {
+            self.coloff = self.render_x - bounds.x + 1;
         }
     }
 }
