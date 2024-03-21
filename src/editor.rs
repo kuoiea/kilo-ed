@@ -133,7 +133,11 @@ impl Editor {
                     // Home键被按下，光标移动到当前行的起始位置。
                     KeyCode::Home => self.cursor.x = 0,
                     // End键被按下，光标移动到当前屏幕宽度的末尾（减去1是因为索引是从0开始的）。
-                    KeyCode::End => self.cursor.x = self.screen.bounds().x - 1,
+                    KeyCode::End => {
+                        if self.cursor.y < self.rows.len() as u16 {
+                            self.cursor.x = self.rows[self.cursor.y as usize].len() as u16
+                        }
+                    }
                     // 箭头键被按下时，根据按键调用move_cursor函数来移动光标位置。
                     KeyCode::Up => self.move_cursor(EditorKey::Up),
                     KeyCode::Left => self.move_cursor(EditorKey::Left),
